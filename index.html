@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toast Notification Playground</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .toast-container {
+            position: fixed;
+            z-index: 9999;
+            transition: all 0.3s ease;
+        }
+        .toast-container.top-right {
+            top: 20px;
+            right: 20px;
+        }
+        .toast-container.top-left {
+            top: 20px;
+            left: 20px;
+        }
+        .toast-container.bottom-right {
+            bottom: 20px;
+            right: 20px;
+        }
+        .toast-container.bottom-left {
+            bottom: 20px;
+            left: 20px;
+        }
+        .toast-container.center {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .toast {
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .toast.hide {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.7);
+            width: 100%;
+            transform: scaleX(1);
+            transform-origin: left;
+            transition: transform linear;
+        }
+        .custom-font-preview {
+            font-size: 1.2rem;
+            padding: 10px;
+            border: 1px dashed #ccc;
+            margin-top: 5px;
+        }
+        .color-picker-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .color-preview {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        .export-code {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold text-center mb-8 text-indigo-700">Toaster Oven</h1>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Configuration Panel -->
+            <div class="bg-white rounded-lg shadow-lg p-6 col-span-1">
+                <h2 class="text-2xl font-semibold mb-6 text-gray-800 border-b pb-2">Configuration</h2>
+                
+                <div class="space-y-6">
+                    <!-- Message Content -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                        <textarea id="message" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" rows="3">This is a toast notification!</textarea>
+                    </div>
+                    
+                    <!-- Toast Type -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button data-type="info" class="toast-type-btn py-2 px-3 rounded-md bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200">Info</button>
+                            <button data-type="success" class="toast-type-btn py-2 px-3 rounded-md bg-green-100 text-green-800 border border-green-200 hover:bg-green-200">Success</button>
+                            <button data-type="warning" class="toast-type-btn py-2 px-3 rounded-md bg-yellow-100 text-yellow-800 border border-yellow-200 hover:bg-yellow-200">Warning</button>
+                            <button data-type="error" class="toast-type-btn py-2 px-3 rounded-md bg-red-100 text-red-800 border border-red-200 hover:bg-red-200">Error</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Position -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Position</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button data-position="top-left" class="position-btn py-2 px-3 rounded-md bg-gray-100 text-gray-800 border border-gray-200 hover:bg-gray-200">Top Left</button>
+                            <button data-position="top-right" class="position-btn py-2 px-3 rounded-md bg-gray-100 text-gray-800 border border-gray-200 hover:bg-gray-200">Top Right</button>
+                            <button data-position="center" class="position-btn py-2 px-3 rounded-md bg-gray-100 text-gray-800 border border-gray-200 hover:bg-gray-200">Center</button>
+                            <button data-position="bottom-left" class="position-btn py-2 px-3 rounded-md bg-gray-100 text-gray-800 border border-gray-200 hover:bg-gray-200">Bottom Left</button>
+                            <button data-position="bottom-right" class="position-btn py-2 px-3 rounded-md bg-gray-100 text-gray-800 border border-gray-200 hover:bg-gray-200">Bottom Right</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Duration -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Duration (ms)</label>
+                        <input type="range" id="duration" min="1000" max="10000" step="500" value="5000" class="w-full">
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>1s</span>
+                            <span>5s</span>
+                            <span>10s</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Animation -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Animation</label>
+                        <select id="animation" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="fade">Fade</option>
+                            <option value="slide">Slide</option>
+                            <option value="zoom">Zoom</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Show Progress Bar -->
+                    <div class="flex items-center">
+                        <input type="checkbox" id="progressBar" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <label for="progressBar" class="ml-2 block text-sm text-gray-700">Show Progress Bar</label>
+                    </div>
+                    
+                    <!-- Show Close Button -->
+                    <div class="flex items-center">
+                        <input type="checkbox" id="closeButton" checked class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <label for="closeButton" class="ml-2 block text-sm text-gray-700">Show Close Button</label>
+                    </div>
+                    
+                    <!-- Show Icon -->
+                    <div class="flex items-center">
+                        <input type="checkbox" id="showIcon" checked class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <label for="showIcon" class="ml-2 block text-sm text-gray-700">Show Icon</label>
+                    </div>
+                    
+                    <!-- Custom Colors -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Custom Colors</label>
+                        <div class="space-y-2">
+                            <div class="color-picker-container">
+                                <span class="text-sm">Background:</span>
+                                <input type="color" id="bgColor" value="#4f46e5" class="h-8 w-8">
+                                <div id="bgColorPreview" class="color-preview" style="background-color: #4f46e5;"></div>
+                            </div>
+                            <div class="color-picker-container">
+                                <span class="text-sm">Text:</span>
+                                <input type="color" id="textColor" value="#ffffff" class="h-8 w-8">
+                                <div id="textColorPreview" class="color-preview" style="background-color: #ffffff;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Font Family -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Font Family</label>
+                        <select id="fontFamily" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="sans-serif">Sans-serif</option>
+                            <option value="serif">Serif</option>
+                            <option value="monospace">Monospace</option>
+                            <option value="cursive">Cursive</option>
+                            <option value="fantasy">Fantasy</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Verdana">Verdana</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Courier New">Courier New</option>
+                        </select>
+                        <div id="fontPreview" class="custom-font-preview" style="font-family: sans-serif;">Font Preview</div>
+                    </div>
+                    
+                    <!-- Font Size -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Font Size (px)</label>
+                        <input type="range" id="fontSize" min="12" max="24" step="1" value="16" class="w-full">
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>12px</span>
+                            <span>18px</span>
+                            <span>24px</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Show Toast Button -->
+                    <button id="showToastBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md shadow-sm transition duration-150 ease-in-out">
+                        Show Toast
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Preview Panel -->
+            <div class="bg-white rounded-lg shadow-lg p-6 col-span-1">
+                <h2 class="text-2xl font-semibold mb-6 text-gray-800 border-b pb-2">Preview</h2>
+                
+                <div id="toastPreview" class="mb-6 p-4 rounded-md bg-indigo-600 text-white flex items-start">
+                    <div class="mr-3">
+                        <i class="fas fa-info-circle text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-medium">This is a toast notification!</p>
+                    </div>
+                    <button class="ml-3 text-white opacity-70 hover:opacity-100">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="mt-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Export Code</h3>
+                    <div class="mb-4">
+                        <button id="copyCodeBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-1 px-3 rounded-md text-sm shadow-sm transition duration-150 ease-in-out">
+                            Copy Code
+                        </button>
+                        <button id="downloadCodeBtn" class="ml-2 bg-green-600 hover:bg-green-700 text-white font-medium py-1 px-3 rounded-md text-sm shadow-sm transition duration-150 ease-in-out">
+                            Download
+                        </button>
+                    </div>
+                    <div id="exportCode" class="export-code">
+                        <!-- Code will be inserted here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Live Demo Panel -->
+            <div class="bg-white rounded-lg shadow-lg p-6 col-span-1 relative">
+                <h2 class="text-2xl font-semibold mb-6 text-gray-800 border-b pb-2">Live Demo</h2>
+                
+                <div class="flex flex-wrap gap-2 mb-6">
+                    <button id="demoInfo" class="py-1 px-3 rounded-md bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200">Info</button>
+                    <button id="demoSuccess" class="py-1 px-3 rounded-md bg-green-100 text-green-800 border border-green-200 hover:bg-green-200">Success</button>
+                    <button id="demoWarning" class="py-1 px-3 rounded-md bg-yellow-100 text-yellow-800 border border-yellow-200 hover:bg-yellow-200">Warning</button>
+                    <button id="demoError" class="py-1 px-3 rounded-md bg-red-100 text-red-800 border border-red-200 hover:bg-red-200">Error</button>
+                    <button id="demoCustom" class="py-1 px-3 rounded-md bg-purple-100 text-purple-800 border border-purple-200 hover:bg-purple-200">Custom</button>
+                    <button id="clearAll" class="py-1 px-3 rounded-md bg-gray-100 text-gray-800 border border-gray-200 hover:bg-gray-200">Clear All</button>
+                </div>
+                
+                <div id="toastContainer" class="toast-container top-right"></div>
+                
+                <div class="mt-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Recent Toasts</h3>
+                    <div id="toastHistory" class="space-y-2 max-h-60 overflow-y-auto">
+                        <!-- Toast history will be added here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Configuration variables
+            let currentType = 'info';
+            let currentPosition = 'top-right';
+            let currentAnimation = 'fade';
+            let currentBgColor = '#4f46e5';
+            let currentTextColor = '#ffffff';
+            let currentFontFamily = 'sans-serif';
+            let currentFontSize = '16px';
+            
+            // DOM Elements
+            const toastContainer = document.getElementById('toastContainer');
+            const toastPreview = document.getElementById('toastPreview');
+            const exportCode = document.getElementById('exportCode');
+            
+            // Initialize
+            updatePreview();
+            generateExportCode();
+            
+            // Event Listeners
+            document.querySelectorAll('.toast-type-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    currentType = this.dataset.type;
+                    updateTypeStyles(currentType);
+                    updatePreview();
+                    generateExportCode();
+                });
+            });
+            
+            document.querySelectorAll('.position-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    currentPosition = this.dataset.position;
+                    toastContainer.className = `toast-container ${currentPosition}`;
+                    updatePreview();
+                    generateExportCode();
+                });
+            });
+            
+            document.getElementById('message').addEventListener('input', function() {
+                updatePreview();
+                generateExportCode();
+            });
+            
+            document.getElementById('duration').addEventListener('input', function() {
+                generateExportCode();
+            });
+            
+            document.getElementById('animation').addEventListener('change', function() {
+                currentAnimation = this.value;
+                generateExportCode();
+            });
+            
+            document.getElementById('progressBar').addEventListener('change', function() {
+                updatePreview();
+                generateExportCode();
+            });
+            
+            document.getElementById('closeButton').addEventListener('change', function() {
+                updatePreview();
+                generateExportCode();
+            });
+            
+            document.getElementById('showIcon').addEventListener('change', function() {
+                updatePreview();
+                generateExportCode();
+            });
+            
+            document.getElementById('bgColor').addEventListener('input', function() {
+                currentBgColor = this.value;
+                document.getElementById('bgColorPreview').style.backgroundColor = currentBgColor;
+                updatePreview();
+                generateExportCode();
+            });
+            
+            document.getElementById('textColor').addEventListener('input', function() {
+                currentTextColor = this.value;
+                document.getElementById('textColorPreview').style.backgroundColor = currentTextColor;
+                updatePreview();
+                generateExportCode();
+            });
+            
+            document.getElementById('fontFamily').addEventListener('change', function() {
+                currentFontFamily = this.value;
+                document.getElementById('fontPreview').style.fontFamily = currentFontFamily;
+                updatePreview();
+                generateExportCode();
+            });
+            
+            document.getElementById('fontSize').addEventListener('input', function() {
+                currentFontSize = `${this.value}px`;
+                document.getElementById('fontPreview').style.fontSize = currentFontSize;
+                updatePreview();
+                generateExportCode();
+            });
+            
+            document.getElementById('showToastBtn').addEventListener('click', function() {
+                showToast();
+            });
+            
+            // Demo buttons
+            document.getElementById('demoInfo').addEventListener('click', function() {
+                showDemoToast('info', 'Information', 'This is an information toast.');
+            });
+            
+            document.getElementById('demoSuccess').addEventListener('click', function() {
+                showDemoToast('success', 'Success', 'Operation completed successfully!');
+            });
+            
+            document.getElementById('demoWarning').addEventListener('click', function() {
+                showDemoToast('warning', 'Warning', 'This is a warning message.');
+            });
+            
+            document.getElementById('demoError').addEventListener('click', function() {
+                showDemoToast('error', 'Error', 'Something went wrong!');
+            });
+            
+            document.getElementById('demoCustom').addEventListener('click', function() {
+                showDemoToast('custom', 'Custom', 'This is a custom styled toast.', {
+                    bgColor: '#8b5cf6',
+                    textColor: '#ffffff',
+                    icon: 'fas fa-star'
+                });
+            });
+            
+            document.getElementById('clearAll').addEventListener('click', function() {
+                clearAllToasts();
+            });
+            
+            // Copy and Download buttons
+            document.getElementById('copyCodeBtn').addEventListener('click', function() {
+                copyToClipboard(exportCode.textContent);
+                showToast('success', 'Copied to clipboard!');
+            });
+            
+            document.getElementById('downloadCodeBtn').addEventListener('click', function() {
+                downloadCode();
+            });
+            
+            // Functions
+            function updateTypeStyles(type) {
+                let bgColor, textColor, icon;
+                
+                switch(type) {
+                    case 'info':
+                        bgColor = '#3b82f6';
+                        textColor = '#ffffff';
+                        icon = 'fas fa-info-circle';
+                        break;
+                    case 'success':
+                        bgColor = '#10b981';
+                        textColor = '#ffffff';
+                        icon = 'fas fa-check-circle';
+                        break;
+                    case 'warning':
+                        bgColor = '#f59e0b';
+                        textColor = '#ffffff';
+                        icon = 'fas fa-exclamation-triangle';
+                        break;
+                    case 'error':
+                        bgColor = '#ef4444';
+                        textColor = '#ffffff';
+                        icon = 'fas fa-times-circle';
+                        break;
+                    default:
+                        bgColor = currentBgColor;
+                        textColor = currentTextColor;
+                        icon = 'fas fa-info-circle';
+                }
+                
+                document.getElementById('bgColor').value = bgColor;
+                document.getElementById('textColor').value = textColor;
+                document.getElementById('bgColorPreview').style.backgroundColor = bgColor;
+                document.getElementById('textColorPreview').style.backgroundColor = textColor;
+                
+                currentBgColor = bgColor;
+                currentTextColor = textColor;
+                
+                return { bgColor, textColor, icon };
+            }
+            
+            function updatePreview() {
+                const message = document.getElementById('message').value;
+                const showProgressBar = document.getElementById('progressBar').checked;
+                const showCloseButton = document.getElementById('closeButton').checked;
+                const showIcon = document.getElementById('showIcon').checked;
+                
+                const typeStyles = updateTypeStyles(currentType);
+                
+                // Update preview toast
+                toastPreview.style.backgroundColor = typeStyles.bgColor;
+                toastPreview.style.color = typeStyles.textColor;
+                toastPreview.style.fontFamily = currentFontFamily;
+                toastPreview.style.fontSize = currentFontSize;
+                
+                // Update message
+                toastPreview.querySelector('p').textContent = message;
+                
+                // Update icon
+                const iconElement = toastPreview.querySelector('i');
+                iconElement.className = `${typeStyles.icon} text-xl`;
+                iconElement.style.display = showIcon ? 'block' : 'none';
+                
+                // Update close button
+                const closeBtn = toastPreview.querySelector('button');
+                closeBtn.style.display = showCloseButton ? 'block' : 'none';
+                
+                // Add progress bar if needed
+                let progressBar = toastPreview.querySelector('.toast-progress');
+                if (showProgressBar) {
+                    if (!progressBar) {
+                        progressBar = document.createElement('div');
+                        progressBar.className = 'toast-progress';
+                        toastPreview.appendChild(progressBar);
+                    }
+                    progressBar.style.backgroundColor = `rgba(255, 255, 255, 0.7)`;
+                } else if (progressBar) {
+                    progressBar.remove();
+                }
+            }
+            
+            function showToast(customType, customMessage) {
+                const type = customType || currentType;
+                const message = customMessage || document.getElementById('message').value;
+                const duration = parseInt(document.getElementById('duration').value);
+                const showProgressBar = document.getElementById('progressBar').checked;
+                const showCloseButton = document.getElementById('closeButton').checked;
+                const showIcon = document.getElementById('showIcon').checked;
+                const animation = currentAnimation;
+                
+                const typeStyles = type === 'custom' ? 
+                    { bgColor: currentBgColor, textColor: currentTextColor, icon: 'fas fa-info-circle' } : 
+                    updateTypeStyles(type);
+                
+                // Create toast element
+                const toast = document.createElement('div');
+                toast.className = `toast ${animation}`;
+                toast.style.backgroundColor = typeStyles.bgColor;
+                toast.style.color = typeStyles.textColor;
+                toast.style.fontFamily = currentFontFamily;
+                toast.style.fontSize = currentFontSize;
+                toast.style.borderRadius = '0.375rem';
+                toast.style.padding = '1rem';
+                toast.style.display = 'flex';
+                toast.style.alignItems = 'flex-start';
+                toast.style.maxWidth = '350px';
+                
+                // Add icon
+                if (showIcon) {
+                    const icon = document.createElement('div');
+                    icon.className = 'mr-3';
+                    const iconElement = document.createElement('i');
+                    iconElement.className = `${typeStyles.icon} text-xl`;
+                    icon.appendChild(iconElement);
+                    toast.appendChild(icon);
+                }
+                
+                // Add content
+                const content = document.createElement('div');
+                content.className = 'flex-1';
+                const messageElement = document.createElement('p');
+                messageElement.className = 'font-medium';
+                messageElement.textContent = message;
+                content.appendChild(messageElement);
+                toast.appendChild(content);
+                
+                // Add close button
+                if (showCloseButton) {
+                    const closeBtn = document.createElement('button');
+                    closeBtn.className = 'ml-3 opacity-70 hover:opacity-100';
+                    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    closeBtn.addEventListener('click', function() {
+                        hideToast(toast);
+                    });
+                    toast.appendChild(closeBtn);
+                }
+                
+                // Add progress bar
+                if (showProgressBar) {
+                    const progressBar = document.createElement('div');
+                    progressBar.className = 'toast-progress';
+                    progressBar.style.backgroundColor = `rgba(255, 255, 255, 0.7)`;
+                    toast.appendChild(progressBar);
+                    
+                    // Animate progress bar
+                    progressBar.style.transform = 'scaleX(1)';
+                    progressBar.style.transition = `transform ${duration}ms linear`;
+                    setTimeout(() => {
+                        progressBar.style.transform = 'scaleX(0)';
+                    }, 10);
+                }
+                
+                // Add to container
+                toastContainer.appendChild(toast);
+                
+                // Show toast with animation
+                setTimeout(() => {
+                    toast.classList.add('show');
+                }, 10);
+                
+                // Auto hide after duration
+                if (duration > 0) {
+                    setTimeout(() => {
+                        hideToast(toast);
+                    }, duration);
+                }
+                
+                // Add to history
+                addToHistory(type, message);
+                
+                return toast;
+            }
+            
+            function showDemoToast(type, title, message, customStyles = {}) {
+                const toast = showToast(type, message);
+                
+                if (customStyles.bgColor) {
+                    toast.style.backgroundColor = customStyles.bgColor;
+                }
+                if (customStyles.textColor) {
+                    toast.style.color = customStyles.textColor;
+                }
+                if (customStyles.icon) {
+                    const icon = toast.querySelector('i');
+                    if (icon) {
+                        icon.className = `${customStyles.icon} text-xl`;
+                    }
+                }
+                
+                // Update title if provided
+                const content = toast.querySelector('.flex-1');
+                if (content && title) {
+                    const titleElement = document.createElement('p');
+                    titleElement.className = 'font-bold';
+                    titleElement.textContent = title;
+                    content.insertBefore(titleElement, content.firstChild);
+                }
+            }
+            
+            function hideToast(toast) {
+                toast.classList.remove('show');
+                toast.classList.add('hide');
+                
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }
+            
+            function clearAllToasts() {
+                const toasts = toastContainer.querySelectorAll('.toast');
+                toasts.forEach(toast => {
+                    hideToast(toast);
+                });
+            }
+            
+            function addToHistory(type, message) {
+                const historyContainer = document.getElementById('toastHistory');
+                const historyItem = document.createElement('div');
+                historyItem.className = 'flex items-center p-2 bg-gray-50 rounded-md';
+                
+                // Add type indicator
+                const typeIndicator = document.createElement('div');
+                typeIndicator.className = `w-3 h-3 rounded-full mr-2 ${
+                    type === 'info' ? 'bg-blue-500' : 
+                    type === 'success' ? 'bg-green-500' : 
+                    type === 'warning' ? 'bg-yellow-500' : 
+                    type === 'error' ? 'bg-red-500' : 'bg-purple-500'
+                }`;
+                historyItem.appendChild(typeIndicator);
+                
+                // Add message
+                const messageElement = document.createElement('span');
+                messageElement.className = 'text-sm text-gray-700';
+                messageElement.textContent = message.length > 50 ? message.substring(0, 50) + '...' : message;
+                historyItem.appendChild(messageElement);
+                
+                // Add timestamp
+                const timestamp = document.createElement('span');
+                timestamp.className = 'ml-auto text-xs text-gray-500';
+                timestamp.textContent = new Date().toLocaleTimeString();
+                historyItem.appendChild(timestamp);
+                
+                // Add to history
+                historyContainer.insertBefore(historyItem, historyContainer.firstChild);
+                
+                // Limit history items
+                if (historyContainer.children.length > 10) {
+                    historyContainer.removeChild(historyContainer.lastChild);
+                }
+            }
+            
+            function generateExportCode() {
+                const message = document.getElementById('message').value;
+                const duration = document.getElementById('duration').value;
+                const showProgressBar = document.getElementById('progressBar').checked;
+                const showCloseButton = document.getElementById('closeButton').checked;
+                const showIcon = document.getElementById('showIcon').checked;
+                
+                const code = `
+// Toast Configuration
+const toastConfig = {
+    type: '${currentType}',
+    message: '${message.replace(/'/g, "\\'")}',
+    position: '${currentPosition}',
+    duration: ${duration},
+    animation: '${currentAnimation}',
+    showProgressBar: ${showProgressBar},
+    showCloseButton: ${showCloseButton},
+    showIcon: ${showIcon},
+    backgroundColor: '${currentBgColor}',
+    textColor: '${currentTextColor}',
+    fontFamily: '${currentFontFamily}',
+    fontSize: '${currentFontSize}'
+};
+
+// Function to show toast
+function showToast(config) {
+    const toast = document.createElement('div');
+    toast.className = \`toast \${config.animation}\`;
+    toast.style.backgroundColor = config.backgroundColor;
+    toast.style.color = config.textColor;
+    toast.style.fontFamily = config.fontFamily;
+    toast.style.fontSize = config.fontSize;
+    toast.style.borderRadius = '0.375rem';
+    toast.style.padding = '1rem';
+    toast.style.display = 'flex';
+    toast.style.alignItems = 'flex-start';
+    toast.style.maxWidth = '350px';
+    
+    // Add icon
+    if (config.showIcon) {
+        const icon = document.createElement('div');
+        icon.className = 'mr-3';
+        const iconElement = document.createElement('i');
+        iconElement.className = \`\${getIconClass(config.type)} text-xl\`;
+        icon.appendChild(iconElement);
+        toast.appendChild(icon);
+    }
+    
+    // Add content
+    const content = document.createElement('div');
+    content.className = 'flex-1';
+    const messageElement = document.createElement('p');
+    messageElement.className = 'font-medium';
+    messageElement.textContent = config.message;
+    content.appendChild(messageElement);
+    toast.appendChild(content);
+    
+    // Add close button
+    if (config.showCloseButton) {
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'ml-3 opacity-70 hover:opacity-100';
+        closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+        closeBtn.addEventListener('click', function() {
+            hideToast(toast);
+        });
+        toast.appendChild(closeBtn);
+    }
+    
+    // Add progress bar
+    if (config.showProgressBar) {
+        const progressBar = document.createElement('div');
+        progressBar.className = 'toast-progress';
+        progressBar.style.backgroundColor = \`rgba(255, 255, 255, 0.7)\`;
+        toast.appendChild(progressBar);
+        
+        // Animate progress bar
+        progressBar.style.transform = 'scaleX(1)';
+        progressBar.style.transition = \`transform \${config.duration}ms linear\`;
+        setTimeout(() => {
+            progressBar.style.transform = 'scaleX(0)';
+        }, 10);
+    }
+    
+    // Add to container
+    const container = document.querySelector(\`.toast-container.\${config.position.replace(' ', '-')}\`);
+    container.appendChild(toast);
+    
+    // Show toast with animation
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 10);
+    
+    // Auto hide after duration
+    if (config.duration > 0) {
+        setTimeout(() => {
+            hideToast(toast);
+        }, config.duration);
+    }
+}
+
+// Helper function to get icon class
+function getIconClass(type) {
+    switch(type) {
+        case 'info': return 'fas fa-info-circle';
+        case 'success': return 'fas fa-check-circle';
+        case 'warning': return 'fas fa-exclamation-triangle';
+        case 'error': return 'fas fa-times-circle';
+        default: return 'fas fa-info-circle';
+    }
+}
+
+// Function to hide toast
+function hideToast(toast) {
+    toast.classList.remove('show');
+    toast.classList.add('hide');
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 300);
+}
+
+// Example usage
+showToast(toastConfig);
+                `;
+                
+                exportCode.textContent = code;
+            }
+            
+            function copyToClipboard(text) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            }
+            
+            function downloadCode() {
+                const code = exportCode.textContent;
+                const blob = new Blob([code], { type: 'text/javascript' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'toast-notification.js';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showToast('success', 'Code downloaded successfully!');
+            }
+        });
+    </script>
+<p style="border-radius: 8px; text-align: center; font-size: 12px; color: #fff; margin-top: 16px;position: fixed; left: 8px; bottom: 8px; z-index: 10; background: rgba(0, 0, 0, 0.8); padding: 4px 8px;">Made with <img src="https://enzostvs-deepsite.hf.space/logo.svg" alt="DeepSite Logo" style="width: 16px; height: 16px; vertical-align: middle;display:inline-block;margin-right:3px;filter:brightness(0) invert(1);"><a href="https://enzostvs-deepsite.hf.space" style="color: #fff;text-decoration: underline;" target="_blank" >DeepSite</a> - 🧬 <a href="https://enzostvs-deepsite.hf.space?remix=sudo-soldier/toast" style="color: #fff;text-decoration: underline;" target="_blank" >Remix</a></p></body>
+</html>
